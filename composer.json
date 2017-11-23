@@ -1,5 +1,5 @@
 {
-    "name": "earnp/getui",
+    "name": "ZP/getui",
     "description": "Laravel 5 Getui Package",
     "authors": [
         {
@@ -13,7 +13,7 @@
     "require": {},
     "autoload": {
       "psr-4": {
-        "Earnp\\Getui\\": "src/"
+        "ZP\\Getui\\": "src/"
       }
     }
 }
