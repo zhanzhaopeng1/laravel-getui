@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Earnp\Getui;
 
 use App\Http\Controllers\Controller;
@@ -15,10 +15,13 @@ class Getui
      */
 
     // 请求构造
-    public static function IGtPush()
+    public static function IGtPush($appKey=null, $masterSecret=null)
     {
-        if (Config::get("getui.HTTPS")) return new IGtPush(Config::get("getui.HOST")[1],Config::get("getui.APPKEY"),Config::get("getui.MASTERSECRET"),Config::get("getui.HTTPS"));
-        return new IGtPush(Config::get("getui.HOST")[0],Config::get("getui.APPKEY"),Config::get("getui.MASTERSECRET"),Config::get("getui.HTTPS"));
+        $appKey = empty($appKey)?Config::get("getui.APPKEY"):$appKey;
+        $masterSecret = empty($masterSecret)?Config::get("getui.MASTERSECRET"):$masterSecret;
+
+        if (Config::get("getui.HTTPS")) return new IGtPush(Config::get("getui.HOST")[1],$appKey,$masterSecret,Config::get("getui.HTTPS"));
+        return new IGtPush(Config::get("getui.HOST")[0], $appKey, $masterSecret);
     }
 
     // 大数据综合分析用户得到的标签:即用户画像
@@ -57,18 +60,24 @@ class Getui
         $ret = $igt->getPushResult($taskId);
         return $ret;
     }
+    //批量获取用户状态
+    public static function getPushResultByTaskidList($taskIds){
+        $igt = self::IGtPush();
+        $ret = $igt->getPushResultByTaskidList($taskIds);
+        return $ret;
+    }
 
     // 获取单日用户数据
-    public static function getUserDataByDate($date){
-        $igt = self::IGtPush();
-        $ret = $igt->queryAppUserDataByDate(Config::get("getui.APPID"),$date);
+    public static function getUserDataByDate($date,$masterSecret=null,$appId=null,$appkey=null){
+        $igt = self::IGtPush($appkey,$masterSecret);
+        $ret = $igt->queryAppUserDataByDate($appId,$date,$appkey);
         return $ret;
     }
 
     // 获取单日推送数据
-    public static function getPushDataByDate($date){
-        $igt = self::IGtPush();
-        $ret = $igt->queryAppPushDataByDate(Config::get("getui.APPID"),$date);
+    public static function getPushDataByDate($date,$masterSecret=null,$appId=null,$appkey=null){
+        $igt = self::IGtPush($appkey,$masterSecret);
+        $ret = $igt->queryAppPushDataByDate($appId,$date,$appkey);
         return $ret;
     }
 
@@ -149,6 +158,7 @@ class Getui
         $target1 = new \IGtTarget();
         $target1->set_appId(Config::get("getui.APPID"));
         $target1->set_clientId($CID);
+        //var_dump($target1);
         //$target1->set_alias(Alias1);
         //接收方2
         // $target2 = new \IGtTarget();
@@ -209,58 +219,58 @@ class Getui
 
     // 透传数据构造
     public static function IGtTransmissionTemplate($data,$config){
-            $template = new \IGtTransmissionTemplate();
-            $template->set_appId(Config::get("getui.APPID"));//应用appid 
-            $template->set_appkey(Config::get("getui.APPKEY"));//应用appkey
-            $template->set_transmissionType(1);//透传消息类型 
-            $template->set_transmissionContent($data);//透传内容
-            // $template->set_duration(BEGINTIME,ENDTIME); //设置ANDROID客户端在此时间区间内展示消息
+        $template = new \IGtTransmissionTemplate();
+        $template->set_appId(Config::get("getui.APPID"));//应用appid
+        $template->set_appkey(Config::get("getui.APPKEY"));//应用appkey
+        $template->set_transmissionType(1);//透传消息类型
+        $template->set_transmissionContent($data);//透传内容
+        // $template->set_duration(BEGINTIME,ENDTIME); //设置ANDROID客户端在此时间区间内展示消息
 
-            $type = empty($config["type"]) ? "simple" : $config["type"];
-            $body = empty($config["body"]) ? "测试内容" : $config["body"];
-            $logo = empty($config["logo"]) ? "" : $config["logo"];
-            $logourl = empty($config["logourl"]) ? "simple" : $config["logourl"];
-            $title = empty($config["title"]) ? "测试标题" : $config["title"];
-            // 如下有两个推送模版，一个简单一个高级，可以互相切换使用。
-            if ($config["type"]=="SIMPLE") {
-                // APN简单推送
-                $apn = new \IGtAPNPayload();
-                $alertmsg=new \SimpleAlertMsg();
-                $alertmsg->alertMsg=$body;
-                $apn->alertMsg=$alertmsg;
-                $apn->badge=2;
-                $apn->sound="";
-                $apn->add_customMsg("payload","payload");
-                $apn->contentAvailable=1;
-                $apn->category="ACTIONABLE";
-                $template->set_apnInfo($apn);
-            }
-            else
-            {
-                // APN高级推送
-                $apn = new \IGtAPNPayload();
-                $alertmsg=new \DictionaryAlertMsg();
-                $alertmsg->body=$body;
-                $alertmsg->actionLocKey="ActionLockey";
-                $alertmsg->locKey="LocKey";
-                $alertmsg->locArgs=array("locargs");
-                $alertmsg->launchImage="launchimage";
-                $alertmsg->set_logo=$logo;
-                $alertmsg->set_logoURL=$logourl;
-                // iOS8.2 支持
-                $alertmsg->title=$title; 
-                $alertmsg->titleLocKey="TitleLocKey"; 
-                $alertmsg->titleLocArgs=array("TitleLocArg");
+        $type = empty($config["type"]) ? "simple" : $config["type"];
+        $body = empty($config["body"]) ? "测试内容" : $config["body"];
+        $logo = empty($config["logo"]) ? "" : $config["logo"];
+        $logourl = empty($config["logourl"]) ? "simple" : $config["logourl"];
+        $title = empty($config["title"]) ? "测试标题" : $config["title"];
+        // 如下有两个推送模版，一个简单一个高级，可以互相切换使用。
+        if ($config["type"]=="SIMPLE") {
+            // APN简单推送
+            $apn = new \IGtAPNPayload();
+            $alertmsg=new \SimpleAlertMsg();
+            $alertmsg->alertMsg=$body;
+            $apn->alertMsg=$alertmsg;
+            $apn->badge=2;
+            $apn->sound="";
+            $apn->add_customMsg("payload","payload");
+            $apn->contentAvailable=1;
+            $apn->category="ACTIONABLE";
+            $template->set_apnInfo($apn);
+        }
+        else
+        {
+            // APN高级推送
+            $apn = new \IGtAPNPayload();
+            $alertmsg=new \DictionaryAlertMsg();
+            $alertmsg->body=$body;
+            $alertmsg->actionLocKey="ActionLockey";
+            $alertmsg->locKey="LocKey";
+            $alertmsg->locArgs=array("locargs");
+            $alertmsg->launchImage="launchimage";
+            $alertmsg->set_logo=$logo;
+            $alertmsg->set_logoURL=$logourl;
+            // iOS8.2 支持
+            $alertmsg->title=$title;
+            $alertmsg->titleLocKey="TitleLocKey";
+            $alertmsg->titleLocArgs=array("TitleLocArg");
 
-                $apn->alertMsg=$alertmsg;
-                $apn->badge=7;
-                $apn->sound=""; 
-                $apn->add_customMsg("payload","payload");
-                $apn->contentAvailable=1;
-                $apn->category="ACTIONABLE";
-                $template->set_apnInfo($apn);
-            }
-            return $template;
+            $apn->alertMsg=$alertmsg;
+            $apn->badge=7;
+            $apn->sound="";
+            $apn->add_customMsg("payload","payload");
+            $apn->contentAvailable=1;
+            $apn->category="ACTIONABLE";
+            $template->set_apnInfo($apn);
+        }
+        return $template;
     }
 
     // 点击通知打开应用模板
@@ -351,6 +361,6 @@ class Getui
         //$template->set_duration(BEGINTIME,ENDTIME); //设置ANDROID客户端在此时间区间内展示消息
         return $template;
     }
-    
+
 
 }
